@@ -3,21 +3,17 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tools — Watcharawit</title>
+<title>Koon's Tools</title>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg:      #0d1117;
-    --panel:   #161b22;
-    --card:    #21262d;
-    --border:  #30363d;
-    --text:    #e6edf3;
-    --muted:   #8b949e;
-    --accent:  #e94560;
-    --blue:    #0969da;
-    --green:   #2ea043;
-    --orange:  #d97706;
+    --bg:       #0d1117;
+    --panel:    #161b22;
+    --card:     #21262d;
+    --border:   #30363d;
+    --text:     #e6edf3;
+    --muted:    #8b949e;
   }
 
   body {
@@ -29,68 +25,83 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 40px 20px;
+    padding: 48px 20px;
   }
 
-  .header {
+  /* ── Header ── */
+  header {
     text-align: center;
-    margin-bottom: 48px;
+    margin-bottom: 52px;
   }
-  .header h1 {
-    font-size: 13px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: .12em;
-    color: var(--muted);
-    margin-bottom: 10px;
+  header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    margin-bottom: 6px;
   }
-  .header p {
+  header h1 span { color: var(--muted); font-weight: 400; }
+  header p {
     font-size: 13px;
     color: var(--muted);
   }
 
-  .grid {
+  /* ── Grid ── */
+  #grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 16px;
     width: 100%;
-    max-width: 700px;
+    max-width: 720px;
   }
 
+  /* ── Card ── */
   .card {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 12px;
-    padding: 28px;
+    padding: 26px 24px;
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 12px;
     text-decoration: none;
-    color: inherit;
+    color: var(--text);
     transition: border-color .15s, transform .15s, box-shadow .15s;
-    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    opacity: 0;
+    transition: opacity .15s;
   }
   .card:hover {
-    border-color: #484f58;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 30px rgba(0,0,0,.4);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 36px rgba(0,0,0,.45);
   }
+  .card:hover::before { opacity: 1; }
 
-  .card-icon {
-    font-size: 32px;
-    line-height: 1;
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; }
+  .card-icon { font-size: 28px; line-height: 1; }
+  .card-arrow {
+    font-size: 16px;
+    color: var(--muted);
+    opacity: 0;
+    transition: opacity .15s, transform .15s;
   }
+  .card:hover .card-arrow { opacity: 1; transform: translate(2px,-2px); }
 
   .card-name {
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 700;
     letter-spacing: -.01em;
   }
-
   .card-desc {
-    font-size: 13px;
+    font-size: 12.5px;
     color: var(--muted);
-    line-height: 1.6;
+    line-height: 1.65;
     flex: 1;
   }
 
@@ -98,59 +109,94 @@
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 600;
-    padding: 4px 9px;
+    padding: 3px 8px;
     border-radius: 20px;
     width: fit-content;
+    letter-spacing: .02em;
   }
-  .badge-blue   { background: rgba(9,105,218,.15); color: #58a6ff; border: 1px solid rgba(9,105,218,.3); }
-  .badge-orange { background: rgba(217,119,6,.15);  color: #f0883e; border: 1px solid rgba(217,119,6,.3); }
+  .dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
 
-  .dot { width: 6px; height: 6px; border-radius: 50%; }
-  .dot-blue   { background: #58a6ff; }
-  .dot-orange { background: #f0883e; }
+  /* Per-tool accent colours (set via CSS variable on each card) */
+  .card { --c: 88,166,255; }  /* default blue */
+  .card:hover { border-color: rgba(var(--c),.45); }
+  .card::before { background: radial-gradient(ellipse at top left, rgba(var(--c),.06) 0%, transparent 70%); }
+  .badge { background: rgba(var(--c),.12); color: rgb(var(--c)); border: 1px solid rgba(var(--c),.3); }
+  .dot   { background: rgb(var(--c)); }
 
+  /* ── Footer ── */
   footer {
-    margin-top: 52px;
+    margin-top: 56px;
     font-size: 11px;
     color: var(--muted);
-    opacity: .5;
+    opacity: .4;
   }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>Watcharawit Ya-inta</h1>
-  <p>Internal tools</p>
-</div>
+<header>
+  <h1>Koon<span>'s Tools</span></h1>
+  <p>Personal utility suite</p>
+</header>
 
-<div class="grid">
-
-  <a class="card" href="./atagen/">
-    <div class="card-icon">📄</div>
-    <div class="card-name">ATAgen</div>
-    <div class="card-desc">
-      ATA Carnet customs document generator.<br>
-      Invoice, ATA-1/2 submission, and ATA-7 return forms for Thai Board of Trade.
-    </div>
-    <div class="badge badge-blue"><span class="dot dot-blue"></span> Web app</div>
-  </a>
-
-  <a class="card" href="https://auto-rtx.onrender.com" target="_blank" rel="noopener">
-    <div class="card-icon">🧾</div>
-    <div class="card-name">Auto RTX Cloud</div>
-    <div class="card-desc">
-      Invoice → Tax Receipt converter.<br>
-      Upload a PDF invoice, set the paid date, and get a renamed RTX receipt instantly.
-    </div>
-    <div class="badge badge-orange"><span class="dot dot-orange"></span> Cloud service</div>
-  </a>
-
-</div>
+<div id="grid"></div>
 
 <footer>koon5666 · github.com/koon5666</footer>
 
+<script>
+/* ─────────────────────────────────────────────────────────────
+   ADD NEW TOOLS HERE — one object per card.
+   Fields:
+     icon    emoji or short text
+     name    display name
+     desc    1-2 sentence description
+     url     full URL
+     tag     badge label
+     color   CSS rgb values string, e.g. "88,166,255"
+     external  true → opens in new tab
+───────────────────────────────────────────────────────────── */
+const TOOLS = [
+  {
+    icon: '📄',
+    name: 'ATAgen',
+    desc: 'ATA Carnet customs document generator. Invoice, ATA-1/2 submission forms, and ATA-7 return forms for the Thai Board of Trade.',
+    url: 'https://koon5666.github.io/atagen/atagen/',
+    tag: 'Web app',
+    color: '88,166,255',
+    external: false,
+  },
+  {
+    icon: '🧾',
+    name: 'Auto RTX Cloud',
+    desc: 'Invoice → Tax Receipt converter. Upload a PDF invoice, set the paid date, and download a renamed RTX receipt instantly.',
+    url: 'https://auto-rtx-cloud.onrender.com',
+    tag: 'Cloud service',
+    color: '240,136,62',
+    external: true,
+  },
+];
+
+/* ── Render ── */
+const grid = document.getElementById('grid');
+TOOLS.forEach(tool => {
+  const a = document.createElement('a');
+  a.className = 'card';
+  a.href = tool.url;
+  if (tool.external) { a.target = '_blank'; a.rel = 'noopener'; }
+  a.style.setProperty('--c', tool.color);
+  a.innerHTML = `
+    <div class="card-top">
+      <div class="card-icon">${tool.icon}</div>
+      <div class="card-arrow">↗</div>
+    </div>
+    <div class="card-name">${tool.name}</div>
+    <div class="card-desc">${tool.desc}</div>
+    <div class="badge"><span class="dot"></span>${tool.tag}</div>
+  `;
+  grid.appendChild(a);
+});
+</script>
 </body>
 </html>

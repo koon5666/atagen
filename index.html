@@ -119,7 +119,7 @@
   .dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
 
   /* Per-tool accent colours (set via CSS variable on each card) */
-  .card { --c: 88,166,255; }  /* default blue */
+  .card { --c: 88,166,255; }
   .card:hover { border-color: rgba(var(--c),.45); }
   .card::before { background: radial-gradient(ellipse at top left, rgba(var(--c),.06) 0%, transparent 70%); }
   .badge { background: rgba(var(--c),.12); color: rgb(var(--c)); border: 1px solid rgba(var(--c),.3); }
@@ -132,9 +132,140 @@
     color: var(--muted);
     opacity: .4;
   }
+
+  /* ── Lock screen ── */
+  #lockScreen {
+    position: fixed;
+    inset: 0;
+    z-index: 999;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .lock-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 240px;
+  }
+
+  .lock-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -.02em;
+    margin-bottom: 4px;
+  }
+  .lock-title span { color: var(--muted); font-weight: 400; }
+
+  .lock-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 28px;
+  }
+
+  .lock-dots {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .lock-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: transparent;
+    border: 2px solid var(--border);
+    transition: background .1s, border-color .1s;
+  }
+  .lock-dot.filled {
+    background: var(--text);
+    border-color: var(--text);
+  }
+
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    15%      { transform: translateX(-8px); }
+    30%      { transform: translateX(8px); }
+    45%      { transform: translateX(-6px); }
+    60%      { transform: translateX(6px); }
+    75%      { transform: translateX(-3px); }
+    90%      { transform: translateX(3px); }
+  }
+  .lock-dots.shake { animation: shake .45s ease; }
+
+  .lock-msg {
+    height: 18px;
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 22px;
+    text-align: center;
+    line-height: 1;
+  }
+  .lock-msg.err { color: #f85149; }
+
+  .kpad {
+    display: grid;
+    grid-template-columns: repeat(3, 68px);
+    gap: 10px;
+  }
+  .kpad button {
+    height: 54px;
+    border-radius: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-size: 18px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .08s, transform .06s;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+  .kpad button:active:not(:disabled) {
+    transform: scale(.91);
+    background: #2d333b;
+  }
+  .kpad button:disabled { opacity: .3; cursor: not-allowed; }
+  .kpad .kp-empty {
+    background: transparent;
+    border-color: transparent;
+    pointer-events: none;
+  }
+  .kpad .kp-back { font-size: 20px; }
 </style>
 </head>
 <body>
+
+<div id="lockScreen">
+  <div class="lock-box">
+    <div class="lock-title">Koon<span>'s Tools</span></div>
+    <div class="lock-sub">Enter PIN</div>
+    <div class="lock-dots" id="lockDots">
+      <span class="lock-dot"></span>
+      <span class="lock-dot"></span>
+      <span class="lock-dot"></span>
+      <span class="lock-dot"></span>
+      <span class="lock-dot"></span>
+      <span class="lock-dot"></span>
+    </div>
+    <div class="lock-msg" id="lockMsg"></div>
+    <div class="kpad" id="kpad">
+      <button onclick="kp('1')">1</button>
+      <button onclick="kp('2')">2</button>
+      <button onclick="kp('3')">3</button>
+      <button onclick="kp('4')">4</button>
+      <button onclick="kp('5')">5</button>
+      <button onclick="kp('6')">6</button>
+      <button onclick="kp('7')">7</button>
+      <button onclick="kp('8')">8</button>
+      <button onclick="kp('9')">9</button>
+      <button class="kp-back" onclick="kpBack()">⌫</button>
+      <button onclick="kp('0')">0</button>
+      <button class="kp-empty" disabled></button>
+    </div>
+  </div>
+</div>
 
 <header>
   <h1>Koon<span>'s Tools</span></h1>
@@ -146,6 +277,94 @@
 <footer>koon5666 · github.com/koon5666</footer>
 
 <script>
+/* ── PIN gate ── */
+const _PH = '4a40de26a9c802f15ac2dde66ab46c790d098b1ec75f9b51fcb4a7fd379f47a8';
+const _RK = 'ktools_r';
+const _AK = 'ktools_a';
+let _pin = '';
+let _cd = null;
+
+async function _hash(s) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+function _getRate() {
+  try { return JSON.parse(localStorage.getItem(_RK) || 'null') || {c:0,t:0}; }
+  catch { return {c:0,t:0}; }
+}
+function _setRate(d) { localStorage.setItem(_RK, JSON.stringify(d)); }
+function _remaining() {
+  const d = _getRate(), e = Date.now() - d.t;
+  return (d.c >= 3 && e < 60000) ? Math.ceil((60000 - e) / 1000) : 0;
+}
+function _msg(txt, isErr) {
+  const el = document.getElementById('lockMsg');
+  el.textContent = txt;
+  el.className = 'lock-msg' + (isErr ? ' err' : '');
+}
+function _updateDots() {
+  document.querySelectorAll('.lock-dot').forEach((d, i) => d.classList.toggle('filled', i < _pin.length));
+}
+function _shake() {
+  const dl = document.getElementById('lockDots');
+  dl.classList.remove('shake');
+  void dl.offsetWidth;
+  dl.classList.add('shake');
+}
+function _setDisabled(v) {
+  document.querySelectorAll('#kpad button').forEach(b => {
+    if (!b.classList.contains('kp-empty')) b.disabled = v;
+  });
+}
+function _unlock() {
+  sessionStorage.setItem(_AK, '1');
+  const ls = document.getElementById('lockScreen');
+  ls.style.transition = 'opacity .3s';
+  ls.style.opacity = '0';
+  setTimeout(() => ls.remove(), 320);
+}
+function _startCountdown(s) {
+  _setDisabled(true);
+  _msg('Too many attempts. Try in ' + s + 's', true);
+  if (_cd) clearInterval(_cd);
+  _cd = setInterval(() => {
+    s--;
+    if (s <= 0) { clearInterval(_cd); _setDisabled(false); _msg('', false); }
+    else _msg('Too many attempts. Try in ' + s + 's', true);
+  }, 1000);
+}
+
+function kp(d) {
+  if (_remaining() > 0 || _pin.length >= 6) return;
+  _pin += d;
+  _updateDots();
+  _msg('', false);
+  if (_pin.length === 6) setTimeout(_check, 0);
+}
+function kpBack() {
+  if (_pin.length > 0) { _pin = _pin.slice(0, -1); _updateDots(); _msg('', false); }
+}
+async function _check() {
+  const entered = _pin; _pin = ''; _updateDots();
+  const h = await _hash(entered);
+  if (h === _PH) { _setRate({c:0, t:0}); _unlock(); return; }
+  _shake();
+  const d = _getRate();
+  const fresh = Date.now() - d.t >= 60000;
+  _setRate({ c: fresh ? 1 : d.c + 1, t: fresh ? Date.now() : d.t });
+  const r = _remaining();
+  if (r > 0) _startCountdown(r); else _msg('Incorrect PIN', true);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  if (sessionStorage.getItem(_AK) === '1') {
+    document.getElementById('lockScreen').style.display = 'none';
+    return;
+  }
+  const r = _remaining();
+  if (r > 0) { _setDisabled(true); _startCountdown(r); }
+});
+
 /* ─────────────────────────────────────────────────────────────
    ADD NEW TOOLS HERE — one object per card.
    Fields:
@@ -178,7 +397,7 @@ const TOOLS = [
   },
 ];
 
-/* ── Render ── */
+/* ── Render cards ── */
 const grid = document.getElementById('grid');
 TOOLS.forEach(tool => {
   const a = document.createElement('a');
